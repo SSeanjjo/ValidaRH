@@ -1,0 +1,60 @@
+HOJA DE VIDA
+============================================================
+
+DATOS PERSONALES
+----------------
+Nombre:              Daniela Fernanda Castillo Ruiz
+Cédula:              1003215678
+Fecha de nacimiento: 18/01/1999
+Teléfono:            3156789012
+Correo:              dcastillo.ind@gmail.com
+LinkedIn:            https://linkedin.com/in/daniela-castillo-ie
+Ciudad:              Bucaramanga, Colombia
+
+PERFIL PROFESIONAL
+------------------
+Ingeniera Industrial recién graduada con énfasis en gestión de
+procesos, mejora continua y cadena de suministro. Experiencia en
+práctica empresarial en el sector manufacturero. Conocimiento en
+metodologías Lean Manufacturing, Six Sigma y BPM. Proactiva, con
+habilidades analíticas y orientada a resultados.
+
+EXPERIENCIA LABORAL
+-------------------
+Practicante de Ingeniería — Industrias Metálicas del Norte S.A.S.
+Febrero 2022 – Agosto 2022 | Bucaramanga
+- Análisis y rediseño de procesos productivos con metodología Lean
+- Implementación de indicadores de gestión (KPIs) en planta
+- Reducción del 12% en tiempos de ciclo en línea de ensamble
+- Elaboración de diagramas de flujo y VSM (Value Stream Mapping)
+
+Monitora Académica — Universidad Industrial de Santander
+Enero 2021 – Diciembre 2021 | Bucaramanga
+- Apoyo docente en asignaturas de Investigación de Operaciones
+- Tutoría a estudiantes en simulación con Arena y ProModel
+
+EDUCACIÓN
+---------
+Ingeniería Industrial — Universidad Industrial de Santander (UIS)
+Graduada: 28/06/2022 | Bucaramanga
+Promedio acumulado: 4.1 / 5.0
+
+Curso Lean Six Sigma Yellow Belt — ICONTEC
+Fecha: 20/09/2021
+
+HABILIDADES TÉCNICAS
+--------------------
+Metodologías:  Lean Manufacturing, Six Sigma, BPM, Kaizen
+Software:      Arena Simulation, AutoCAD, Minitab, Excel avanzado
+Gestión:       SAP MM básico, Microsoft Project
+Calidad:       ISO 9001:2015, HACCP
+
+IDIOMAS
+-------
+Español: Nativo
+Inglés:  B2 (avanzado)
+
+REFERENCIAS
+-----------
+Ing. Ramiro Díaz — Industrias Metálicas del Norte S.A.S.
+Teléfono: 6076543210   Correo: rdiaz@imn.com.co

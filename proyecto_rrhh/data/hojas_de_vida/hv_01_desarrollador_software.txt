@@ -1,0 +1,57 @@
+HOJA DE VIDA
+============================================================
+
+DATOS PERSONALES
+----------------
+Nombre:             Carlos Andrés Moreno Ríos
+Cédula:             1020453781
+Fecha de nacimiento: 14/03/1995
+Teléfono:           3124567890
+Correo:             carlos.moreno@gmail.com
+LinkedIn:           https://linkedin.com/in/carlosmoreno
+GitHub:             https://github.com/camoreno
+Ciudad:             Bogotá, Colombia
+
+PERFIL PROFESIONAL
+------------------
+Desarrollador de software con 4 años de experiencia en desarrollo web
+full stack. Apasionado por las buenas prácticas de código limpio, las
+arquitecturas escalables y la entrega continua. Experiencia trabajando
+en equipos ágiles con metodología Scrum.
+
+EXPERIENCIA LABORAL
+-------------------
+Desarrollador Full Stack — TechSolutions S.A.S.
+Enero 2021 – Actualidad | Bogotá
+- Desarrollo de APIs REST con Python y FastAPI
+- Construcción de interfaces con React y TypeScript
+- Gestión de bases de datos PostgreSQL y MongoDB
+- Implementación de pipelines CI/CD en GitHub Actions
+
+Desarrollador Backend Junior — Softcol Ltda.
+Julio 2020 – Diciembre 2020 | Medellín
+- Desarrollo de microservicios con Django REST Framework
+- Integración de pasarelas de pago (PayU, Wompi)
+- Documentación técnica con Swagger
+
+EDUCACIÓN
+---------
+Ingeniería de Sistemas — Universidad Nacional de Colombia
+Graduado: 15/06/2019 | Bogotá
+
+HABILIDADES TÉCNICAS
+--------------------
+Lenguajes:   Python, JavaScript, TypeScript, SQL
+Frameworks:  Django, FastAPI, React, Node.js
+Bases de datos: PostgreSQL, MongoDB, Redis
+Herramientas:   Docker, Git, GitHub Actions, Linux
+
+IDIOMAS
+-------
+Español: Nativo
+Inglés:  B2 (intermedio-avanzado)
+
+REFERENCIAS
+-----------
+Ing. Sandra Gómez — TechSolutions S.A.S.
+Teléfono: 3209876543   Correo: sgomez@techsolutions.com.co

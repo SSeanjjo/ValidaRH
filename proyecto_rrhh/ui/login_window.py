@@ -12,6 +12,36 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import random
 import datetime
+import json
+import pathlib
+
+# Archivo donde se guardan los correos usados recientemente
+_RECIENTES_PATH = pathlib.Path(__file__).parent.parent / 'data' / 'login_recientes.json'
+
+
+def _cargar_recientes() -> list:
+    try:
+        if _RECIENTES_PATH.exists():
+            return json.loads(_RECIENTES_PATH.read_text(encoding='utf-8'))
+    except Exception:
+        pass
+    return []
+
+
+def _guardar_reciente(correo: str) -> None:
+    recientes = _cargar_recientes()
+    if correo in recientes:
+        recientes.remove(correo)
+    recientes.insert(0, correo)        # El más reciente primero
+    recientes = recientes[:10]         # Máximo 10 sugerencias
+    try:
+        _RECIENTES_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _RECIENTES_PATH.write_text(
+            json.dumps(recientes, ensure_ascii=False, indent=2),
+            encoding='utf-8'
+        )
+    except Exception:
+        pass
 
 
 def _generar_codigo(n: int = 6) -> str:
@@ -98,6 +128,9 @@ class LoginWindow(tk.Toplevel):
         self._construir_login(self._frame_login)
         self._construir_registro(self._frame_reg)
 
+        # Al volver a "Iniciar sesión", copiar el correo ya escrito en Registro
+        self._nb.bind('<<NotebookTabChanged>>', self._al_cambiar_tab)
+
         # Barra de estado
         self.lbl_estado = ttk.Label(self, text='', foreground='gray',
                                     font=('Helvetica', 8))
@@ -123,9 +156,11 @@ class LoginWindow(tk.Toplevel):
 
         ttk.Label(frm, text='Correo electrónico:').grid(
             row=0, column=0, columnspan=2, sticky='w', padx=12, pady=(16, 4))
-        self.ent_login_correo = ttk.Entry(frm, width=32)
+        self._recientes = _cargar_recientes()
+        self.ent_login_correo = ttk.Combobox(frm, width=30, values=self._recientes)
         self.ent_login_correo.grid(row=1, column=0, columnspan=2,
                                    padx=12, sticky='ew')
+        self.ent_login_correo.bind('<KeyRelease>', self._filtrar_correos)
 
         ttk.Label(frm, text='Contraseña:').grid(
             row=2, column=0, columnspan=2, sticky='w', padx=12, pady=(12, 4))
@@ -157,19 +192,80 @@ class LoginWindow(tk.Toplevel):
             self._set_estado('Complete todos los campos.', error=True)
             return
 
-        u = UsuarioRepo.verificar_credenciales(correo, passwd)
-        if not u:
+        cuentas = UsuarioRepo.verificar_credenciales_multi(correo, passwd)
+        if not cuentas:
             self._set_estado('Correo o contraseña incorrectos.', error=True)
             return
 
-        if not u['verificado']:
+        verificadas = [c for c in cuentas if c['verificado']]
+
+        if not verificadas:
             self._set_estado('Cuenta sin verificar. Revise su correo.', error=True)
             self._solicitar_verificacion(correo)
             return
 
-        self._usuario = dict(u)
-        self._set_estado(f"Bienvenido, {u['nombre'].split()[0]}.")
+        if len(verificadas) == 1:
+            self._usuario = verificadas[0]
+            _guardar_reciente(correo)
+            self._set_estado(f"Bienvenido, {verificadas[0]['nombre'].split()[0]}.")
+            self.after(400, self.destroy)
+        else:
+            # El correo tiene cuentas en ambos roles — preguntar cuál usar
+            self._seleccionar_rol(verificadas, correo)
+
+    def _seleccionar_rol(self, cuentas: list, correo: str = ''):
+        """Diálogo para elegir con qué rol ingresar cuando hay dos cuentas."""
+        dialogo = tk.Toplevel(self)
+        dialogo.title('Seleccionar rol')
+        dialogo.resizable(False, False)
+        dialogo.grab_set()
+        dialogo.configure(bg='#f5f5f5')
+
+        ttk.Label(dialogo,
+                  text='Tienes cuenta con ambos roles.\n¿Con cuál deseas ingresar?',
+                  font=('Helvetica', 10), justify='center').pack(
+                      padx=28, pady=(20, 12))
+
+        iconos = {'reclutador': '📋  Reclutador', 'postulante': '🎯  Postulante'}
+        for cuenta in cuentas:
+            texto = iconos.get(cuenta['rol'], cuenta['rol'].capitalize())
+            ttk.Button(dialogo, text=texto,
+                       command=lambda c=cuenta, e=correo: self._confirmar_rol(
+                           c, dialogo, e)).pack(pady=4, ipadx=24, ipady=6)
+
+        ttk.Button(dialogo, text='Cancelar',
+                   command=dialogo.destroy).pack(pady=(8, 16))
+
+        dialogo.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width()  - dialogo.winfo_width())  // 2
+        y = self.winfo_rooty() + (self.winfo_height() - dialogo.winfo_height()) // 2
+        dialogo.geometry(f'+{x}+{y}')
+
+    def _confirmar_rol(self, cuenta: dict, dialogo: tk.Toplevel, correo: str = ''):
+        dialogo.destroy()
+        self._usuario = cuenta
+        if correo:
+            _guardar_reciente(correo)
+        self._set_estado(f"Bienvenido, {cuenta['nombre'].split()[0]}.")
         self.after(400, self.destroy)
+
+    def _al_cambiar_tab(self, _event=None):
+        """Si el usuario vuelve a 'Iniciar sesión', copia el correo del registro."""
+        if self._nb.index('current') == 0:
+            correo_reg = getattr(self, 'ent_reg_correo', None)
+            if correo_reg and correo_reg.get().strip():
+                self.ent_login_correo.delete(0, 'end')
+                self.ent_login_correo.insert(0, correo_reg.get().strip())
+                self._filtrar_correos()
+
+    def _filtrar_correos(self, _event=None):
+        """Filtra las sugerencias del combobox según lo que el usuario esté escribiendo."""
+        typed = self.ent_login_correo.get().strip().lower()
+        if typed:
+            filtrados = [r for r in self._recientes if typed in r.lower()]
+        else:
+            filtrados = self._recientes
+        self.ent_login_correo['values'] = filtrados
 
     # ── Panel Registro ────────────────────────────────────────────────────────
 
@@ -345,20 +441,14 @@ class LoginWindow(tk.Toplevel):
             self._set_estado(msg, error=True)
             return
 
-        if not exito_mail:
-            messagebox.showinfo(
-                'Verificación de correo',
-                f"No se pudo enviar el correo ({err or 'SMTP no configurado'}).\n\n"
-                f"Su código de verificación es:\n\n"
-                f"       {codigo}\n\n"
-                f"Guárdelo y úselo en el siguiente paso."
-            )
-
-        self._solicitar_verificacion(self.ent_reg_correo.get().strip())
+        # Si el correo no se pudo enviar, pasar el código directamente al diálogo
+        codigo_local = codigo if not exito_mail else None
+        self._solicitar_verificacion(self.ent_reg_correo.get().strip(),
+                                     codigo_local=codigo_local)
 
     # ── Verificación ──────────────────────────────────────────────────────────
 
-    def _solicitar_verificacion(self, correo: str):
+    def _solicitar_verificacion(self, correo: str, codigo_local: str = None):
         from db.repository import UsuarioRepo
         dialogo = tk.Toplevel(self)
         dialogo.title('Verificación de correo')
@@ -366,16 +456,29 @@ class LoginWindow(tk.Toplevel):
         dialogo.grab_set()
         dialogo.configure(bg='#f5f5f5')
 
-        ttk.Label(dialogo,
-                  text='Ingrese el código de 6 dígitos enviado a:',
-                  font=('Helvetica', 9)).pack(padx=24, pady=(20, 4))
-        ttk.Label(dialogo, text=correo,
-                  font=('Helvetica', 9, 'bold'),
-                  foreground='#1565c0').pack(padx=24, pady=(0, 12))
+        if codigo_local:
+            ttk.Label(dialogo,
+                      text='No se pudo enviar el correo. Tu código es:',
+                      font=('Helvetica', 9), foreground='gray').pack(
+                          padx=24, pady=(20, 4))
+            ttk.Label(dialogo, text=codigo_local,
+                      font=('Courier', 26, 'bold'),
+                      foreground='#1565c0').pack(padx=24, pady=(0, 4))
+            ttk.Label(dialogo, text='(ya está llenado abajo — solo haz clic en Verificar)',
+                      font=('Helvetica', 8), foreground='gray').pack(padx=24, pady=(0, 8))
+        else:
+            ttk.Label(dialogo,
+                      text='Ingrese el código de 6 dígitos enviado a:',
+                      font=('Helvetica', 9)).pack(padx=24, pady=(20, 4))
+            ttk.Label(dialogo, text=correo,
+                      font=('Helvetica', 9, 'bold'),
+                      foreground='#1565c0').pack(padx=24, pady=(0, 12))
 
         ent_cod = ttk.Entry(dialogo, width=14,
                             font=('Courier', 16), justify='center')
         ent_cod.pack(padx=24, pady=4)
+        if codigo_local:
+            ent_cod.insert(0, codigo_local)   # Pre-llenado, solo confirmar
         ent_cod.focus()
 
         lbl_err = ttk.Label(dialogo, text='', foreground='#c62828',

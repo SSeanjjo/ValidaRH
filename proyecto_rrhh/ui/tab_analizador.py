@@ -33,7 +33,7 @@ Versión: 1.0
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from logic.analyzers.report_analyzer import ReportAnalyzer
-from logic.analyzers.cv_matcher import CVMatcher
+from proyecto_rrhh.logic.cv_matcher.cv_matcher import CVMatcher
 
 
 class TabAnalizador(ttk.Frame):

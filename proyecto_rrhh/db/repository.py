@@ -39,9 +39,11 @@ class UsuarioRepo:
             return True, 'Usuario creado correctamente.'
         except Exception as e:
             if 'UNIQUE' in str(e):
-                if 'correo' in str(e):
-                    return False, 'El correo ya está registrado.'
-                return False, 'El nombre de usuario ya está en uso.'
+                err = str(e).lower()
+                if 'correo' in err and 'rol' in err:
+                    return False, 'Ya tienes una cuenta con este correo para ese rol.'
+                if 'usuario' in err:
+                    return False, 'El nombre de usuario ya está en uso.'
             return False, f'Error al crear usuario: {e}'
 
     @staticmethod
@@ -58,6 +60,16 @@ class UsuarioRepo:
         if u and u['contrasena_hash'] == _hash(contrasena):
             return u
         return None
+
+    @staticmethod
+    def verificar_credenciales_multi(correo: str, contrasena: str) -> list:
+        """Retorna todas las cuentas con ese correo cuya contraseña coincida."""
+        with get_conn() as conn:
+            rows = conn.execute(
+                'SELECT * FROM usuarios WHERE correo=? AND contrasena_hash=?',
+                (correo, _hash(contrasena))
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     @staticmethod
     def marcar_verificado(correo: str) -> None:

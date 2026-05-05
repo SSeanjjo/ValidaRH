@@ -384,7 +384,7 @@ class TabPostulante(ttk.Frame):
             return
 
         from db.repository import HojaDeVidaRepo, VacanteRepo, HistorialRepo
-        from logic.analyzers.cv_matcher import CVMatcher
+        from logic.cv_matcher.cv_matcher import CVMatcher
 
         cv  = HojaDeVidaRepo.obtener(self._cvs_anal_map[cv_key])
         vac = VacanteRepo.obtener(self._vacs_anal_map[vac_key])
@@ -667,7 +667,7 @@ class _DialogNuevaVacante(tk.Toplevel):
 
     def _guardar(self):
         from db.repository import VacanteRepo
-        from logic.analyzers.cv_matcher import CVMatcher
+        from logic.cv_matcher.cv_matcher import CVMatcher
 
         titulo = self.ent_titulo.get().strip()
         if not titulo:
@@ -681,7 +681,9 @@ class _DialogNuevaVacante(tk.Toplevel):
                 text='✗ Ingrese o cargue la descripción de la vacante.')
             return
 
-        keywords = CVMatcher().extraer_keywords_perfil(desc)
+        matcher  = CVMatcher()
+        desc     = matcher.preparar_descripcion(desc)
+        keywords = matcher.extraer_keywords_perfil(desc)
 
         ok, msg = VacanteRepo.crear(
             id_usuario  = self._id_usuario,

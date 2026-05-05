@@ -122,7 +122,7 @@ class TabReclutador(ttk.Frame):
 
         def _guardar():
             from db.repository import PerfilRepo
-            from logic.analyzers.cv_matcher import CVMatcher
+            from proyecto_rrhh.logic.cv_matcher.cv_matcher import CVMatcher
             titulo = ent_titulo.get().strip()
             desc   = txt_desc.get('1.0', 'end').strip()
             if not titulo:
@@ -131,7 +131,9 @@ class TabReclutador(ttk.Frame):
             if not desc:
                 lbl_err.config(text='La descripción no puede estar vacía.')
                 return
-            keywords = CVMatcher().extraer_keywords_perfil(desc)
+            matcher  = CVMatcher()
+            desc     = matcher.preparar_descripcion(desc)
+            keywords = matcher.extraer_keywords_perfil(desc)
             ok, msg = PerfilRepo.crear(self._usuario['id'], titulo, desc, keywords)
             if ok:
                 dlg.destroy()
@@ -317,7 +319,7 @@ class TabReclutador(ttk.Frame):
 
         perfil = self._perfiles_map[perfil_key]
 
-        from logic.analyzers.cv_matcher import CVMatcher
+        from proyecto_rrhh.logic.cv_matcher.cv_matcher import CVMatcher
         from db.repository import HistorialRepo
 
         resultado = CVMatcher().analizar(u['cv_texto'], perfil['descripcion'])

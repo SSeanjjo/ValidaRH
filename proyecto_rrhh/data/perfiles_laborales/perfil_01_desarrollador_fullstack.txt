@@ -1,0 +1,48 @@
+PERFIL LABORAL — DESARROLLADOR FULL STACK
+============================================================
+
+Empresa:    TechSolutions S.A.S.
+Cargo:      Desarrollador Full Stack
+Modalidad:  Híbrido (3 días presencial, 2 remoto)
+Ubicación:  Bogotá, Colombia
+Salario:    $4.500.000 – $6.000.000 COP / mes
+
+DESCRIPCIÓN DEL CARGO
+----------------------
+Buscamos un Desarrollador Full Stack con experiencia sólida en Python
+y JavaScript para unirse a nuestro equipo de producto. La persona será
+responsable del desarrollo y mantenimiento de aplicaciones web,
+integración de APIs y optimización del rendimiento del sistema.
+
+RESPONSABILIDADES
+-----------------
+- Desarrollo de APIs REST con Python y FastAPI o Django
+- Construcción de interfaces de usuario con React o Vue.js
+- Gestión y optimización de bases de datos PostgreSQL y MongoDB
+- Implementación de pruebas unitarias y de integración
+- Participación en revisiones de código y sesiones de arquitectura
+- Documentación técnica de servicios y endpoints
+- Trabajo colaborativo en metodología Scrum y sprints quincenales
+
+REQUISITOS OBLIGATORIOS
+------------------------
+- Título en Ingeniería de Sistemas, Informática o afín
+- Mínimo 3 años de experiencia en desarrollo full stack
+- Dominio de Python con Django o FastAPI
+- Dominio de JavaScript y React o TypeScript
+- Manejo de bases de datos relacionales PostgreSQL y SQL
+- Conocimiento de Git y control de versiones
+- Experiencia con contenedores Docker
+- Inglés mínimo B1 para lectura de documentación técnica
+
+REQUISITOS DESEABLES
+---------------------
+- Experiencia con microservicios y arquitecturas cloud (AWS, GCP)
+- Conocimiento de Redis para caché
+- Familiaridad con CI/CD y GitHub Actions o Jenkins
+- Experiencia con metodologías ágiles Scrum o Kanban
+
+COMPETENCIAS
+------------
+Trabajo en equipo, comunicación asertiva, autonomía, orientación al
+detalle, capacidad de aprendizaje continuo.

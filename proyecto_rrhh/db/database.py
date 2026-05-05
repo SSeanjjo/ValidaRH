@@ -20,7 +20,7 @@ def inicializar_bd() -> None:
         CREATE TABLE IF NOT EXISTS usuarios (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre              TEXT    NOT NULL,
-            correo              TEXT    UNIQUE NOT NULL,
+            correo              TEXT    NOT NULL,
             contrasena_hash     TEXT    NOT NULL,
             rol                 TEXT    NOT NULL CHECK(rol IN ('reclutador','postulante')),
             cedula              TEXT,
@@ -31,7 +31,8 @@ def inicializar_bd() -> None:
             verificado          INTEGER DEFAULT 0,
             codigo_verificacion TEXT,
             cv_texto            TEXT,
-            cv_nombre           TEXT
+            cv_nombre           TEXT,
+            UNIQUE(correo, rol)
         );
 
         CREATE TABLE IF NOT EXISTS perfiles_laborales (

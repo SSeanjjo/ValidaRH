@@ -1,0 +1,60 @@
+HOJA DE VIDA
+============================================================
+
+DATOS PERSONALES
+----------------
+Nombre:              Valentina Ospina Herrera
+Cédula:              1007834219
+Fecha de nacimiento: 22/09/1997
+Teléfono:            3187654321
+Correo:              vospina.design@hotmail.com
+Portafolio:          https://www.valentinaoспина.com
+LinkedIn:            https://linkedin.com/in/vospina-design
+Ciudad:              Medellín, Colombia
+
+PERFIL PROFESIONAL
+------------------
+Diseñadora gráfica y UX/UI con 3 años de experiencia en agencias
+creativas y startups de tecnología. Especializada en identidad de marca,
+diseño de interfaces digitales y experiencia de usuario. Manejo avanzado
+de Adobe Creative Suite y herramientas de prototipado.
+
+EXPERIENCIA LABORAL
+-------------------
+Diseñadora UX/UI — Agencia Pixel S.A.S.
+Marzo 2022 – Actualidad | Medellín
+- Diseño de interfaces para aplicaciones web y móviles
+- Creación de prototipos interactivos en Figma
+- Realización de pruebas de usabilidad con usuarios reales
+- Diseño de sistemas de diseño (design systems)
+
+Diseñadora Gráfica Junior — Estudio Creativo Forma
+Agosto 2021 – Febrero 2022 | Medellín
+- Diseño de piezas para redes sociales y campañas digitales
+- Desarrollo de identidad visual para marcas locales
+- Diagramación editorial en InDesign
+
+EDUCACIÓN
+---------
+Diseño Visual — Universidad de Antioquia
+Graduada: 30/11/2020 | Medellín
+
+Diplomado en UX/UI Design — Platzi
+Fecha: 15/04/2021
+
+HABILIDADES TÉCNICAS
+--------------------
+Diseño:      Figma, Adobe XD, Sketch
+Gráfico:     Illustrator, Photoshop, InDesign, After Effects
+Otros:       HTML, CSS básico, Notion, Jira
+
+IDIOMAS
+-------
+Español: Nativo
+Inglés:  B1 (intermedio)
+Portugués: A2 (básico)
+
+REFERENCIAS
+-----------
+Dir. Laura Montoya — Agencia Pixel S.A.S.
+Teléfono: 6044512378   Correo: lmontoya@pixelagencia.com
