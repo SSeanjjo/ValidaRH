@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys; sys.path.insert\\(0,'.'\\); from ui.login_window import LoginWindow; print\\('OK'\\)\")"
+    ]
+  }
+}

@@ -122,7 +122,7 @@ class TabReclutador(ttk.Frame):
 
         def _guardar():
             from db.repository import PerfilRepo
-            from proyecto_rrhh.logic.cv_matcher.cv_matcher import CVMatcher
+            from logic.cv_matcher.cv_matcher import CVMatcher
             titulo = ent_titulo.get().strip()
             desc   = txt_desc.get('1.0', 'end').strip()
             if not titulo:
@@ -319,7 +319,7 @@ class TabReclutador(ttk.Frame):
 
         perfil = self._perfiles_map[perfil_key]
 
-        from proyecto_rrhh.logic.cv_matcher.cv_matcher import CVMatcher
+        from logic.cv_matcher.cv_matcher import CVMatcher
         from db.repository import HistorialRepo
 
         resultado = CVMatcher().analizar(u['cv_texto'], perfil['descripcion'])
