@@ -1,3 +1,4 @@
+
 """
 main.py — Punto de entrada del sistema ValidaRH v2.0.
 
