@@ -292,67 +292,98 @@ class TabReclutador(ttk.Frame):
     def _nuevo_candidato(self):
         dlg = tk.Toplevel(self)
         dlg.title('Agregar candidato')
-        dlg.geometry('440x330')
-        dlg.resizable(False, False)
+        dlg.geometry('520x500')
+        dlg.resizable(False, True)
         dlg.grab_set()
 
-        campos = [
-            ('Nombre completo *:',    'nombre',    ''),
-            ('Correo electrónico *:', 'correo',    ''),
-            ('Contraseña temporal *:','contrasena',''),
-            ('Cédula:',               'cedula',    ''),
-            ('Teléfono:',             'telefono',  ''),
-        ]
-        entradas = {}
-        for i, (lbl, key, _) in enumerate(campos):
-            ttk.Label(dlg, text=lbl,
-                      font=('Helvetica', 9, 'bold')).grid(
-                          row=i, column=0, sticky='w',
-                          padx=16, pady=(10 if i == 0 else 4, 2))
-            ent = ttk.Entry(dlg, width=34,
-                            show='*' if key == 'contrasena' else '')
-            ent.grid(row=i, column=1, padx=(4, 16),
-                     pady=(10 if i == 0 else 4, 2), sticky='w')
-            entradas[key] = ent
+        frm = ttk.Frame(dlg)
+        frm.pack(fill='both', expand=True, padx=16, pady=12)
 
-        frm_bot = ttk.Frame(dlg)
-        frm_bot.grid(row=len(campos), column=0, columnspan=2,
-                     sticky='ew', padx=16, pady=12)
-        lbl_err = ttk.Label(frm_bot, text='', foreground='#c62828',
-                            font=('Helvetica', 8))
-        lbl_err.pack(side='left')
+        ttk.Label(frm, text='Nombre del candidato *:',
+                  font=('Helvetica', 9, 'bold')).grid(
+                      row=0, column=0, sticky='w', pady=(0, 2))
+        ent_nombre = ttk.Entry(frm, width=52)
+        ent_nombre.grid(row=1, column=0, columnspan=2,
+                        sticky='ew', pady=(0, 10))
+
+        ttk.Label(frm, text='Contenido del CV:',
+                  font=('Helvetica', 9, 'bold')).grid(
+                      row=2, column=0, sticky='w', pady=(0, 2))
+
+        cv_nombre_var = ['']
+
+        def _cargar_archivo():
+            from logic.analyzers.report_analyzer import ReportAnalyzer
+            ruta = filedialog.askopenfilename(
+                title='Seleccionar CV',
+                filetypes=[('Documentos', '*.txt *.pdf'),
+                           ('Texto', '*.txt'), ('PDF', '*.pdf')])
+            if not ruta:
+                return
+            ra = ReportAnalyzer()
+            ok, msg = ra.cargar_archivo(ruta)
+            if not ok:
+                messagebox.showerror('Error', msg, parent=dlg)
+                return
+            cv_nombre_var[0] = ruta.replace('\\', '/').split('/')[-1]
+            txt_cv.delete('1.0', 'end')
+            txt_cv.insert('end', ra.get_contenido())
+            lbl_arch.config(text=f"Archivo: {cv_nombre_var[0]}",
+                            foreground='#1565c0')
+            if not ent_nombre.get():
+                ent_nombre.insert(0, cv_nombre_var[0])
+
+        ttk.Button(frm, text='📂  Cargar desde archivo (.txt / .pdf)',
+                   command=_cargar_archivo).grid(
+                       row=2, column=1, sticky='e', pady=(0, 2))
+
+        txt_cv = ScrolledText(frm, height=14, wrap='word',
+                              font=('Courier', 8))
+        txt_cv.grid(row=3, column=0, columnspan=2,
+                    sticky='nsew', pady=4)
+
+        lbl_arch = ttk.Label(frm, text='(sin archivo cargado)',
+                              foreground='gray', font=('Helvetica', 8))
+        lbl_arch.grid(row=4, column=0, columnspan=2, sticky='w')
+
+        lbl_err = ttk.Label(frm, text='', foreground='#c62828',
+                             font=('Helvetica', 8))
+        lbl_err.grid(row=5, column=0, columnspan=2,
+                     sticky='w', pady=(4, 0))
+
+        frm_bot = ttk.Frame(frm)
+        frm_bot.grid(row=6, column=0, columnspan=2, pady=12)
 
         def _guardar():
             from db.repository import UsuarioRepo
-            nombre    = entradas['nombre'].get().strip()
-            correo    = entradas['correo'].get().strip()
-            contrasena = entradas['contrasena'].get()
-            cedula    = entradas['cedula'].get().strip()
-            telefono  = entradas['telefono'].get().strip()
+            nombre = ent_nombre.get().strip()
+            cv_txt = txt_cv.get('1.0', 'end').strip()
             if not nombre:
-                lbl_err.config(text='El nombre es obligatorio.')
+                lbl_err.config(text='El nombre del candidato es obligatorio.')
                 return
-            if not correo:
-                lbl_err.config(text='El correo es obligatorio.')
+            if not cv_txt:
+                lbl_err.config(
+                    text='Ingrese o cargue el CV del candidato.')
                 return
-            if not contrasena:
-                lbl_err.config(text='La contraseña es obligatoria.')
-                return
-            ok, msg = UsuarioRepo.crear(
-                nombre=nombre, correo=correo, contrasena=contrasena,
-                rol='postulante', cedula=cedula, telefono=telefono)
+            ok, msg = UsuarioRepo.crear_candidato_reclutador(
+                nombre, cv_txt, cv_nombre_var[0])
             if ok:
                 dlg.destroy()
                 self._cargar_candidatos()
                 messagebox.showinfo('Candidato agregado',
-                                    f"'{nombre}' registrado correctamente.")
+                                    f"'{nombre}' agregado correctamente.")
             else:
                 lbl_err.config(text=msg)
 
         ttk.Button(frm_bot, text='Cancelar',
-                   command=dlg.destroy).pack(side='right', padx=4, ipadx=8, ipady=4)
+                   command=dlg.destroy).pack(side='left', padx=8,
+                                             ipadx=8, ipady=4)
         ttk.Button(frm_bot, text='Guardar',
-                   command=_guardar).pack(side='right', ipadx=12, ipady=4)
+                   command=_guardar).pack(side='left', padx=8,
+                                          ipadx=12, ipady=4)
+
+        frm.columnconfigure(0, weight=1)
+        frm.rowconfigure(3, weight=1)
 
     def _editar_candidato(self):
         sel = self._tree_cand.selection()
@@ -365,49 +396,85 @@ class TabReclutador(ttk.Frame):
 
         dlg = tk.Toplevel(self)
         dlg.title('Editar candidato')
-        dlg.geometry('440x280')
-        dlg.resizable(False, False)
+        dlg.geometry('520x500')
+        dlg.resizable(False, True)
         dlg.grab_set()
 
-        campos = [
-            ('Nombre completo *:',    'nombre',   u.get('nombre', '')),
-            ('Correo electrónico *:', 'correo',   u.get('correo', '')),
-            ('Cédula:',               'cedula',   u.get('cedula', '') or ''),
-            ('Teléfono:',             'telefono', u.get('telefono', '') or ''),
-        ]
-        entradas = {}
-        for i, (lbl, key, val) in enumerate(campos):
-            ttk.Label(dlg, text=lbl,
-                      font=('Helvetica', 9, 'bold')).grid(
-                          row=i, column=0, sticky='w',
-                          padx=16, pady=(10 if i == 0 else 4, 2))
-            ent = ttk.Entry(dlg, width=34)
-            ent.insert(0, val)
-            ent.grid(row=i, column=1, padx=(4, 16),
-                     pady=(10 if i == 0 else 4, 2), sticky='w')
-            entradas[key] = ent
+        frm = ttk.Frame(dlg)
+        frm.pack(fill='both', expand=True, padx=16, pady=12)
 
-        frm_bot = ttk.Frame(dlg)
-        frm_bot.grid(row=len(campos), column=0, columnspan=2,
-                     sticky='ew', padx=16, pady=12)
-        lbl_err = ttk.Label(frm_bot, text='', foreground='#c62828',
-                            font=('Helvetica', 8))
-        lbl_err.pack(side='left')
+        ttk.Label(frm, text='Nombre del candidato *:',
+                  font=('Helvetica', 9, 'bold')).grid(
+                      row=0, column=0, sticky='w', pady=(0, 2))
+        ent_nombre = ttk.Entry(frm, width=52)
+        ent_nombre.insert(0, u.get('nombre', ''))
+        ent_nombre.grid(row=1, column=0, columnspan=2,
+                        sticky='ew', pady=(0, 10))
+
+        ttk.Label(frm, text='Contenido del CV:',
+                  font=('Helvetica', 9, 'bold')).grid(
+                      row=2, column=0, sticky='w', pady=(0, 2))
+
+        cv_nombre_actual = u.get('cv_nombre', '') or ''
+        cv_nombre_var = [cv_nombre_actual]
+
+        def _cargar_archivo():
+            from logic.analyzers.report_analyzer import ReportAnalyzer
+            ruta = filedialog.askopenfilename(
+                title='Seleccionar CV',
+                filetypes=[('Documentos', '*.txt *.pdf'),
+                           ('Texto', '*.txt'), ('PDF', '*.pdf')])
+            if not ruta:
+                return
+            ra = ReportAnalyzer()
+            ok, msg = ra.cargar_archivo(ruta)
+            if not ok:
+                messagebox.showerror('Error', msg, parent=dlg)
+                return
+            cv_nombre_var[0] = ruta.replace('\\', '/').split('/')[-1]
+            txt_cv.delete('1.0', 'end')
+            txt_cv.insert('end', ra.get_contenido())
+            lbl_arch.config(text=f"Archivo: {cv_nombre_var[0]}",
+                            foreground='#1565c0')
+
+        ttk.Button(frm, text='📂  Cargar desde archivo (.txt / .pdf)',
+                   command=_cargar_archivo).grid(
+                       row=2, column=1, sticky='e', pady=(0, 2))
+
+        txt_cv = ScrolledText(frm, height=14, wrap='word',
+                              font=('Courier', 8))
+        txt_cv.insert('end', u.get('cv_texto', '') or '')
+        txt_cv.grid(row=3, column=0, columnspan=2,
+                    sticky='nsew', pady=4)
+
+        arch_txt   = f"Archivo: {cv_nombre_actual}" if cv_nombre_actual \
+                     else '(sin archivo cargado)'
+        arch_color = '#1565c0' if cv_nombre_actual else 'gray'
+        lbl_arch = ttk.Label(frm, text=arch_txt, foreground=arch_color,
+                              font=('Helvetica', 8))
+        lbl_arch.grid(row=4, column=0, columnspan=2, sticky='w')
+
+        lbl_err = ttk.Label(frm, text='', foreground='#c62828',
+                             font=('Helvetica', 8))
+        lbl_err.grid(row=5, column=0, columnspan=2,
+                     sticky='w', pady=(4, 0))
+
+        frm_bot = ttk.Frame(frm)
+        frm_bot.grid(row=6, column=0, columnspan=2, pady=12)
 
         def _actualizar():
             from db.repository import UsuarioRepo
-            nombre   = entradas['nombre'].get().strip()
-            correo   = entradas['correo'].get().strip()
-            cedula   = entradas['cedula'].get().strip()
-            telefono = entradas['telefono'].get().strip()
+            nombre = ent_nombre.get().strip()
+            cv_txt = txt_cv.get('1.0', 'end').strip()
             if not nombre:
-                lbl_err.config(text='El nombre es obligatorio.')
+                lbl_err.config(text='El nombre del candidato es obligatorio.')
                 return
-            if not correo:
-                lbl_err.config(text='El correo es obligatorio.')
+            if not cv_txt:
+                lbl_err.config(
+                    text='Ingrese o cargue el CV del candidato.')
                 return
             ok, msg = UsuarioRepo.actualizar_candidato(
-                int(sel[0]), nombre, correo, cedula, telefono)
+                int(sel[0]), nombre, cv_txt, cv_nombre_var[0])
             if ok:
                 dlg.destroy()
                 self._cargar_candidatos()
@@ -416,9 +483,14 @@ class TabReclutador(ttk.Frame):
                 lbl_err.config(text=msg)
 
         ttk.Button(frm_bot, text='Cancelar',
-                   command=dlg.destroy).pack(side='right', padx=4, ipadx=8, ipady=4)
+                   command=dlg.destroy).pack(side='left', padx=8,
+                                             ipadx=8, ipady=4)
         ttk.Button(frm_bot, text='Actualizar',
-                   command=_actualizar).pack(side='right', ipadx=12, ipady=4)
+                   command=_actualizar).pack(side='left', padx=8,
+                                             ipadx=12, ipady=4)
+
+        frm.columnconfigure(0, weight=1)
+        frm.rowconfigure(3, weight=1)
 
     def _eliminar_candidato(self):
         sel = self._tree_cand.selection()

@@ -99,7 +99,8 @@ class UsuarioRepo:
     def listar_postulantes() -> list:
         with get_conn() as conn:
             rows = conn.execute(
-                "SELECT id, nombre, correo, cedula, telefono, cv_nombre, fecha_registro "
+                "SELECT id, nombre, correo, cedula, telefono, "
+                "cv_nombre, cv_texto, fecha_registro "
                 "FROM usuarios WHERE rol='postulante' ORDER BY fecha_registro DESC"
             ).fetchall()
         return [dict(r) for r in rows]
@@ -121,18 +122,36 @@ class UsuarioRepo:
             return False, f'Error: {e}'
 
     @staticmethod
-    def actualizar_candidato(id_usuario: int, nombre: str, correo: str,
-                             cedula: str, telefono: str) -> tuple:
+    def crear_candidato_reclutador(nombre: str, cv_texto: str,
+                                   cv_nombre: str) -> tuple:
+        import uuid
+        email_auto = f"candidato_{uuid.uuid4().hex[:14]}@validarh.local"
+        pass_auto  = uuid.uuid4().hex
         try:
             with get_conn() as conn:
                 conn.execute(
-                    'UPDATE usuarios SET nombre=?, correo=?, cedula=?, telefono=? WHERE id=?',
-                    (nombre, correo, cedula, telefono, id_usuario)
+                    """INSERT INTO usuarios
+                       (nombre, correo, contrasena_hash, rol,
+                        fecha_registro, verificado, cv_texto, cv_nombre)
+                       VALUES (?,?,?,?,?,1,?,?)""",
+                    (nombre, email_auto, _hash(pass_auto),
+                     'postulante', _ahora(), cv_texto, cv_nombre)
+                )
+            return True, 'Candidato creado correctamente.'
+        except Exception as e:
+            return False, f'Error: {e}'
+
+    @staticmethod
+    def actualizar_candidato(id_usuario: int, nombre: str,
+                             cv_texto: str, cv_nombre: str) -> tuple:
+        try:
+            with get_conn() as conn:
+                conn.execute(
+                    'UPDATE usuarios SET nombre=?, cv_texto=?, cv_nombre=? WHERE id=?',
+                    (nombre, cv_texto, cv_nombre, id_usuario)
                 )
             return True, 'Candidato actualizado correctamente.'
         except Exception as e:
-            if 'UNIQUE' in str(e):
-                return False, 'Ya existe un postulante con ese correo.'
             return False, f'Error: {e}'
 
     @staticmethod
