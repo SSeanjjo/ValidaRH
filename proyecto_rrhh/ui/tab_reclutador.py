@@ -164,30 +164,42 @@ class TabReclutador(ttk.Frame):
     # ─────────────────────────────────────────────────────────────────────────
 
     def _construir_candidatos(self, parent):
-        # Panel izquierdo: lista de postulantes registrados
         pan = ttk.PanedWindow(parent, orient='horizontal')
         pan.pack(fill='both', expand=True, padx=8, pady=8)
 
-        # Lista
+        # ── Panel izquierdo: lista de candidatos ──────────────────────────────
         frame_lista = ttk.LabelFrame(pan, text='Postulantes registrados')
         pan.add(frame_lista, weight=1)
 
+        # Barra CRUD
+        barra = ttk.Frame(frame_lista)
+        barra.pack(fill='x', padx=4, pady=(4, 2))
+        ttk.Button(barra, text='+ Agregar',
+                   command=self._nuevo_candidato).pack(side='left', padx=2)
+        ttk.Button(barra, text='Editar',
+                   command=self._editar_candidato).pack(side='left', padx=2)
+        ttk.Button(barra, text='Eliminar',
+                   command=self._eliminar_candidato).pack(side='left', padx=2)
+        ttk.Button(barra, text='↻ Actualizar',
+                   command=self._cargar_candidatos).pack(side='right', padx=2)
+
+        # Tabla de candidatos
+        frame_tree = ttk.Frame(frame_lista)
+        frame_tree.pack(fill='both', expand=True, padx=4, pady=4)
+
         cols = ('nombre', 'correo', 'cedula', 'fecha')
         self._tree_cand = ttk.Treeview(
-            frame_lista, columns=cols, show='headings', height=16)
-        for c, txt, w in [('nombre','Nombre',130),('correo','Correo',150),
-                           ('cedula','Cédula',90),('fecha','Registro',110)]:
+            frame_tree, columns=cols, show='headings', height=14)
+        for c, txt, w in [('nombre', 'Nombre', 130), ('correo', 'Correo', 150),
+                           ('cedula', 'Cédula', 90), ('fecha', 'Registro', 110)]:
             self._tree_cand.heading(c, text=txt)
             self._tree_cand.column(c, width=w)
-        sv = ttk.Scrollbar(frame_lista, orient='vertical',
+        sv = ttk.Scrollbar(frame_tree, orient='vertical',
                            command=self._tree_cand.yview)
         self._tree_cand.configure(yscrollcommand=sv.set)
-        self._tree_cand.pack(side='left', fill='both', expand=True, padx=4, pady=4)
-        sv.pack(side='right', fill='y', pady=4)
+        sv.pack(side='right', fill='y')
+        self._tree_cand.pack(side='left', fill='both', expand=True)
         self._tree_cand.bind('<<TreeviewSelect>>', self._al_seleccionar_candidato)
-
-        ttk.Button(frame_lista, text='Actualizar lista',
-                   command=self._cargar_candidatos).pack(pady=4)
 
         # Panel derecho: análisis
         frame_analisis = ttk.LabelFrame(pan, text='Analizar candidato')
@@ -276,6 +288,155 @@ class TabReclutador(ttk.Frame):
                 values=(u['nombre'], u['correo'],
                         u['cedula'] or '—', u['fecha_registro']))
             self._candidatos_data[str(u['id'])] = u
+
+    def _nuevo_candidato(self):
+        dlg = tk.Toplevel(self)
+        dlg.title('Agregar candidato')
+        dlg.geometry('440x330')
+        dlg.resizable(False, False)
+        dlg.grab_set()
+
+        campos = [
+            ('Nombre completo *:',    'nombre',    ''),
+            ('Correo electrónico *:', 'correo',    ''),
+            ('Contraseña temporal *:','contrasena',''),
+            ('Cédula:',               'cedula',    ''),
+            ('Teléfono:',             'telefono',  ''),
+        ]
+        entradas = {}
+        for i, (lbl, key, _) in enumerate(campos):
+            ttk.Label(dlg, text=lbl,
+                      font=('Helvetica', 9, 'bold')).grid(
+                          row=i, column=0, sticky='w',
+                          padx=16, pady=(10 if i == 0 else 4, 2))
+            ent = ttk.Entry(dlg, width=34,
+                            show='*' if key == 'contrasena' else '')
+            ent.grid(row=i, column=1, padx=(4, 16),
+                     pady=(10 if i == 0 else 4, 2), sticky='w')
+            entradas[key] = ent
+
+        frm_bot = ttk.Frame(dlg)
+        frm_bot.grid(row=len(campos), column=0, columnspan=2,
+                     sticky='ew', padx=16, pady=12)
+        lbl_err = ttk.Label(frm_bot, text='', foreground='#c62828',
+                            font=('Helvetica', 8))
+        lbl_err.pack(side='left')
+
+        def _guardar():
+            from db.repository import UsuarioRepo
+            nombre    = entradas['nombre'].get().strip()
+            correo    = entradas['correo'].get().strip()
+            contrasena = entradas['contrasena'].get()
+            cedula    = entradas['cedula'].get().strip()
+            telefono  = entradas['telefono'].get().strip()
+            if not nombre:
+                lbl_err.config(text='El nombre es obligatorio.')
+                return
+            if not correo:
+                lbl_err.config(text='El correo es obligatorio.')
+                return
+            if not contrasena:
+                lbl_err.config(text='La contraseña es obligatoria.')
+                return
+            ok, msg = UsuarioRepo.crear(
+                nombre=nombre, correo=correo, contrasena=contrasena,
+                rol='postulante', cedula=cedula, telefono=telefono)
+            if ok:
+                dlg.destroy()
+                self._cargar_candidatos()
+                messagebox.showinfo('Candidato agregado',
+                                    f"'{nombre}' registrado correctamente.")
+            else:
+                lbl_err.config(text=msg)
+
+        ttk.Button(frm_bot, text='Cancelar',
+                   command=dlg.destroy).pack(side='right', padx=4, ipadx=8, ipady=4)
+        ttk.Button(frm_bot, text='Guardar',
+                   command=_guardar).pack(side='right', ipadx=12, ipady=4)
+
+    def _editar_candidato(self):
+        sel = self._tree_cand.selection()
+        if not sel:
+            messagebox.showinfo('Sin selección', 'Seleccione un candidato.')
+            return
+        u = self._candidatos_data.get(sel[0])
+        if not u:
+            return
+
+        dlg = tk.Toplevel(self)
+        dlg.title('Editar candidato')
+        dlg.geometry('440x280')
+        dlg.resizable(False, False)
+        dlg.grab_set()
+
+        campos = [
+            ('Nombre completo *:',    'nombre',   u.get('nombre', '')),
+            ('Correo electrónico *:', 'correo',   u.get('correo', '')),
+            ('Cédula:',               'cedula',   u.get('cedula', '') or ''),
+            ('Teléfono:',             'telefono', u.get('telefono', '') or ''),
+        ]
+        entradas = {}
+        for i, (lbl, key, val) in enumerate(campos):
+            ttk.Label(dlg, text=lbl,
+                      font=('Helvetica', 9, 'bold')).grid(
+                          row=i, column=0, sticky='w',
+                          padx=16, pady=(10 if i == 0 else 4, 2))
+            ent = ttk.Entry(dlg, width=34)
+            ent.insert(0, val)
+            ent.grid(row=i, column=1, padx=(4, 16),
+                     pady=(10 if i == 0 else 4, 2), sticky='w')
+            entradas[key] = ent
+
+        frm_bot = ttk.Frame(dlg)
+        frm_bot.grid(row=len(campos), column=0, columnspan=2,
+                     sticky='ew', padx=16, pady=12)
+        lbl_err = ttk.Label(frm_bot, text='', foreground='#c62828',
+                            font=('Helvetica', 8))
+        lbl_err.pack(side='left')
+
+        def _actualizar():
+            from db.repository import UsuarioRepo
+            nombre   = entradas['nombre'].get().strip()
+            correo   = entradas['correo'].get().strip()
+            cedula   = entradas['cedula'].get().strip()
+            telefono = entradas['telefono'].get().strip()
+            if not nombre:
+                lbl_err.config(text='El nombre es obligatorio.')
+                return
+            if not correo:
+                lbl_err.config(text='El correo es obligatorio.')
+                return
+            ok, msg = UsuarioRepo.actualizar_candidato(
+                int(sel[0]), nombre, correo, cedula, telefono)
+            if ok:
+                dlg.destroy()
+                self._cargar_candidatos()
+                messagebox.showinfo('Candidato actualizado', msg)
+            else:
+                lbl_err.config(text=msg)
+
+        ttk.Button(frm_bot, text='Cancelar',
+                   command=dlg.destroy).pack(side='right', padx=4, ipadx=8, ipady=4)
+        ttk.Button(frm_bot, text='Actualizar',
+                   command=_actualizar).pack(side='right', ipadx=12, ipady=4)
+
+    def _eliminar_candidato(self):
+        sel = self._tree_cand.selection()
+        if not sel:
+            messagebox.showinfo('Sin selección', 'Seleccione un candidato.')
+            return
+        u = self._candidatos_data.get(sel[0])
+        nombre = u['nombre'] if u else 'el candidato'
+        if not messagebox.askyesno(
+                'Confirmar eliminación',
+                f"¿Eliminar a '{nombre}' y todos sus datos asociados?\n"
+                "Esta acción no se puede deshacer."):
+            return
+        from db.repository import UsuarioRepo
+        UsuarioRepo.eliminar_candidato(int(sel[0]))
+        self._cargar_candidatos()
+        messagebox.showinfo('Candidato eliminado',
+                            f"'{nombre}' eliminado correctamente.")
 
     def _al_seleccionar_candidato(self, _event):
         sel = self._tree_cand.selection()

@@ -121,6 +121,33 @@ class UsuarioRepo:
             return False, f'Error: {e}'
 
     @staticmethod
+    def actualizar_candidato(id_usuario: int, nombre: str, correo: str,
+                             cedula: str, telefono: str) -> tuple:
+        try:
+            with get_conn() as conn:
+                conn.execute(
+                    'UPDATE usuarios SET nombre=?, correo=?, cedula=?, telefono=? WHERE id=?',
+                    (nombre, correo, cedula, telefono, id_usuario)
+                )
+            return True, 'Candidato actualizado correctamente.'
+        except Exception as e:
+            if 'UNIQUE' in str(e):
+                return False, 'Ya existe un postulante con ese correo.'
+            return False, f'Error: {e}'
+
+    @staticmethod
+    def eliminar_candidato(id_usuario: int) -> None:
+        with get_conn() as conn:
+            conn.execute(
+                'DELETE FROM historial_analisis WHERE id_usuario=?', (id_usuario,))
+            conn.execute(
+                'DELETE FROM hojas_de_vida WHERE id_usuario=?', (id_usuario,))
+            conn.execute(
+                'DELETE FROM vacantes_postulante WHERE id_usuario=?', (id_usuario,))
+            conn.execute(
+                'DELETE FROM usuarios WHERE id=?', (id_usuario,))
+
+    @staticmethod
     def cambiar_contrasena(id_usuario: int, actual: str, nueva: str) -> tuple:
         """Verifica la contraseña actual y actualiza a la nueva."""
         with get_conn() as conn:
