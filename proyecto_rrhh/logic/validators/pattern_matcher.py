@@ -74,40 +74,85 @@ class PatternMatcher:
     @staticmethod
     def es_telefono_co(texto: str) -> bool:
         """
-        Formatos: 3001234567 | +573001234567 | 6011234567
-        Móvil: 10 dígitos empezando en 3.  Fijo: 10 dígitos empezando en 6.
+        DFA: q0 → prefijo(+57|57)? → q4 → (3|6) → q5..q14(aceptación)
+        Estados:
+          0: inicio
+          1: leyó '+', espera '5'
+          2: leyó '+5', espera '7'
+          3: leyó '5' inicial (posible prefijo 57), espera '7'
+          4: prefijo completo, espera '3' o '6'
+          5: primer dígito válido leído, faltan 9
+          6-13: dígitos 2-9
+          14: décimo dígito — ACEPTACIÓN
         """
         t = texto.strip().replace(' ', '').replace('-', '')
-        if t.startswith('+57'):
-            t = t[3:]
-        elif t.startswith('57') and len(t) == 12:
-            t = t[2:]
+        estado = 0
 
-        digitos = 0
         for c in t:
-            if not PatternMatcher._is_digit(c):
+            if estado == 0:
+                if c == '+':
+                    estado = 1
+                elif c == '5':
+                    estado = 3
+                elif c in ('3', '6'):
+                    estado = 5
+                else:
+                    return False
+            elif estado == 1:
+                if c == '5':
+                    estado = 2
+                else:
+                    return False
+            elif estado == 2:
+                if c == '7':
+                    estado = 4
+                else:
+                    return False
+            elif estado == 3:
+                if c == '7':
+                    estado = 4
+                else:
+                    return False
+            elif estado == 4:
+                if c in ('3', '6'):
+                    estado = 5
+                else:
+                    return False
+            elif 5 <= estado <= 13:
+                if PatternMatcher._is_digit(c):
+                    estado += 1
+                else:
+                    return False
+            else:
                 return False
-            digitos += 1
 
-        if digitos == 10 and t[0] == '3':
-            return True
-        if digitos == 10 and t[0] == '6':
-            return True
-        return False
+        return estado == 14
 
     @staticmethod
     def es_cedula(texto: str) -> bool:
         """
+        DFA: q0 → (1-9) → q1 → dígito → q2 → ... → qn  (aceptación: 6 ≤ n ≤ 10)
+        Estados 1-10 representan la cantidad de dígitos leídos.
         Cédula colombiana: 6–10 dígitos, sin ceros a la izquierda.
-        Nota: números de 10 dígitos que empiezan en 3 o 6 son ambiguos
-        con teléfonos; la resolución se hace en find_all() por contexto.
         """
         t = texto.strip().replace('.', '').replace(' ', '')
-        if not (6 <= len(t) <= 10):
-            return False
-        if t[0] == '0':
-            return False
-        return all(PatternMatcher._is_digit(c) for c in t)
+        estado = 0
+
+        for c in t:
+            if estado == 0:
+                if PatternMatcher._is_digit(c) and c != '0':
+                    estado = 1
+                else:
+                    return False
+            elif 1 <= estado <= 9:
+                if PatternMatcher._is_digit(c):
+                    estado += 1
+                else:
+                    return False
+            else:
+                return False  # más de 10 dígitos
+
+        return 6 <= estado <= 10
 
     @staticmethod
     def _cedula_es_ambigua(texto: str) -> bool:
@@ -118,30 +163,85 @@ class PatternMatcher:
 
     @staticmethod
     def es_fecha(texto: str) -> bool:
-        """Formato DD/MM/AAAA o DD-MM-AAAA con validación de rangos."""
+        """
+        DFA: q0→q1(d1)→q2(d2)→q3(sep)→q4(m1)→q5(m2)→q6(sep)→q7(a1)→q8(a2)→q9(a3)→q10(a4)
+        Formato DD/MM/AAAA o DD-MM-AAAA. El separador debe ser consistente.
+        """
         t = texto.strip()
+        estado = 0
         sep = None
-        if '/' in t:
-            sep = '/'
-        elif '-' in t:
-            sep = '-'
-        else:
+        buf = ['', '', '']  # [dd, mm, aaaa]
+
+        for c in t:
+            if estado == 0:
+                if PatternMatcher._is_digit(c):
+                    buf[0] += c
+                    estado = 1
+                else:
+                    return False
+            elif estado == 1:
+                if PatternMatcher._is_digit(c):
+                    buf[0] += c
+                    estado = 2
+                else:
+                    return False
+            elif estado == 2:
+                if c in ('/', '-'):
+                    sep = c
+                    estado = 3
+                else:
+                    return False
+            elif estado == 3:
+                if PatternMatcher._is_digit(c):
+                    buf[1] += c
+                    estado = 4
+                else:
+                    return False
+            elif estado == 4:
+                if PatternMatcher._is_digit(c):
+                    buf[1] += c
+                    estado = 5
+                else:
+                    return False
+            elif estado == 5:
+                if c == sep:
+                    estado = 6
+                else:
+                    return False
+            elif estado == 6:
+                if PatternMatcher._is_digit(c):
+                    buf[2] += c
+                    estado = 7
+                else:
+                    return False
+            elif estado == 7:
+                if PatternMatcher._is_digit(c):
+                    buf[2] += c
+                    estado = 8
+                else:
+                    return False
+            elif estado == 8:
+                if PatternMatcher._is_digit(c):
+                    buf[2] += c
+                    estado = 9
+                else:
+                    return False
+            elif estado == 9:
+                if PatternMatcher._is_digit(c):
+                    buf[2] += c
+                    estado = 10
+                else:
+                    return False
+            else:
+                return False  # caracteres extra
+
+        if estado != 10:
             return False
 
-        partes = t.split(sep)
-        if len(partes) != 3:
-            return False
-
-        d_str, m_str, a_str = partes
-        if not (len(d_str) == 2 and len(m_str) == 2 and len(a_str) == 4):
-            return False
-        if not all(PatternMatcher._is_digit(c) for c in d_str + m_str + a_str):
-            return False
-
-        d, m, a = int(d_str), int(m_str), int(a_str)
+        d, m, a = int(buf[0]), int(buf[1]), int(buf[2])
         if not (1 <= m <= 12):
             return False
-        dias_por_mes = [0,31,29,31,30,31,30,31,31,30,31,30,31]
+        dias_por_mes = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         if not (1 <= d <= dias_por_mes[m]):
             return False
         if not (1900 <= a <= 2100):
@@ -150,41 +250,124 @@ class PatternMatcher:
 
     @staticmethod
     def es_url(texto: str) -> bool:
-        """Valida URLs: http(s)://dominio.ext[/ruta]"""
+        """
+        DFA para http(s)://dominio.ext[/ruta]
+        Estados:
+          0-3 : leyendo 'http'
+          4   : leyó 'http', espera 's' o ':'
+          5   : leyó 'https', espera ':'
+          6   : leyó ':', espera primer '/'
+          7   : leyó primer '/', espera segundo '/'
+          8   : inicio del dominio, espera alnum
+          9   : interior del dominio (alnum | '-' | '_')
+          10  : leyó '.', espera inicio de TLD/subdominio
+          11  : dentro de TLD o ruta — ACEPTACIÓN
+        """
         t = texto.strip()
-        i = 0
-        n = len(t)
+        estado = 0
+        _http = 'http'
 
-        for p in ('https://', 'http://'):
-            if t.startswith(p):
-                i = len(p)
-                break
-        else:
-            return False
+        for c in t:
+            if estado < 4:
+                if c == _http[estado]:
+                    estado += 1
+                else:
+                    return False
+            elif estado == 4:
+                if c == 's':
+                    estado = 5
+                elif c == ':':
+                    estado = 6
+                else:
+                    return False
+            elif estado == 5:
+                if c == ':':
+                    estado = 6
+                else:
+                    return False
+            elif estado == 6:
+                if c == '/':
+                    estado = 7
+                else:
+                    return False
+            elif estado == 7:
+                if c == '/':
+                    estado = 8
+                else:
+                    return False
+            elif estado == 8:
+                if PatternMatcher._is_alnum(c):
+                    estado = 9
+                else:
+                    return False
+            elif estado == 9:
+                if PatternMatcher._is_alnum(c) or c in '-_':
+                    pass
+                elif c == '.':
+                    estado = 10
+                elif c == '/':
+                    return False  # llegó '/' sin haber visto punto en el dominio
+                else:
+                    return False
+            elif estado == 10:
+                if PatternMatcher._is_alpha(c):
+                    estado = 11
+                else:
+                    return False
+            elif estado == 11:
+                if PatternMatcher._is_alnum(c) or c in '-_./':
+                    pass
+                else:
+                    return False
 
-        start = i
-        while i < n and (PatternMatcher._is_alnum(t[i]) or t[i] in '-_.'):
-            i += 1
-        if i == start:
-            return False
-        if i >= n or '.' not in t[start:i]:
-            return False
-        return True
+        return estado == 11
 
     @staticmethod
     def es_placa_co(texto: str) -> bool:
         """
+        DFA: q0→q1(L)→q2(L)→q3(L)→q4(D)→q5(D)[moto]→q6(D)[vehículo]
         Placas colombianas:
-          Vehículo: 3 letras + 3 dígitos (ABC123)
-          Moto:     3 letras + 2 dígitos (ABC12)
+          Vehículo: 3 letras + 3 dígitos  (ABC123) — acepta en q6
+          Moto:     3 letras + 2 dígitos  (ABC12)  — acepta en q5
         """
         t = texto.strip().upper().replace('-', '').replace(' ', '')
-        if len(t) not in (5, 6):
-            return False
-        letras = t[:3]
-        numeros = t[3:]
-        return (all(PatternMatcher._is_alpha(c) for c in letras) and
-                all(PatternMatcher._is_digit(c) for c in numeros))
+        estado = 0
+
+        for c in t:
+            if estado == 0:
+                if PatternMatcher._is_alpha(c):
+                    estado = 1
+                else:
+                    return False
+            elif estado == 1:
+                if PatternMatcher._is_alpha(c):
+                    estado = 2
+                else:
+                    return False
+            elif estado == 2:
+                if PatternMatcher._is_alpha(c):
+                    estado = 3
+                else:
+                    return False
+            elif estado == 3:
+                if PatternMatcher._is_digit(c):
+                    estado = 4
+                else:
+                    return False
+            elif estado == 4:
+                if PatternMatcher._is_digit(c):
+                    estado = 5
+                else:
+                    return False
+            elif estado == 5:
+                if PatternMatcher._is_digit(c):
+                    estado = 6
+                else:
+                    return False
+            else:
+                return False  # más de 6 caracteres
+
+        return estado in (5, 6)  # 5=moto, 6=vehículo
 
     # ── Motor de búsqueda con desambiguación telefono/cédula ─────────────────
 
